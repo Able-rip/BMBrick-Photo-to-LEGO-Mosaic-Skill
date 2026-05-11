@@ -1,12 +1,12 @@
-# BMBrick Agent Mosaic Skill
+﻿# BMBrick Agent Mosaic Skill
 
 Preview-only local mosaic generation for Agent and MCP workflows.
 
-\@bmbrick/agent-mosaic-skill\ lets an agent convert a local image into a BMBrick LEGO-style mosaic preview on the user's machine. The generated preview uses the same canonical BMBrick preview pipeline as the website, includes a BMBrick watermark, and does not return project data such as placement matrices, parts lists, PDFs, or unwatermarked HD exports.
+`@bmbrick/agent-mosaic-skill` lets an agent convert a local image into a BMBrick LEGO-style mosaic preview on the user's machine. The generated preview uses the same canonical BMBrick preview pipeline as the website, includes a BMBrick watermark, and does not return project data such as placement matrices, parts lists, PDFs, or unwatermarked HD exports.
 
 ## Visual Previews
 
-Generated using the \generate_bmbrick_mosaic\ tool (3D render mode):
+Generated using the `generate_bmbrick_mosaic` tool (3D render mode):
 
 | Original Photo | 48x48 Preview | 64x64 Preview |
 | :--- | :--- | :--- |
@@ -14,18 +14,17 @@ Generated using the \generate_bmbrick_mosaic\ tool (3D render mode):
 
 ## Usage
 
-Run directly via \
-px\:
+Run directly via `npx`:
 
-\\\ash
+```bash
 npx -y @bmbrick/agent-mosaic-skill
-\\\
+```
 
 ### MCP Configuration
 
-Add this to your MCP settings file (e.g., \claude_desktop_config.json\):
+Add this to your MCP settings file (e.g., `claude_desktop_config.json`):
 
-\\\json
+```json
 {
   "mcpServers": {
     "bmbrick": {
@@ -34,16 +33,16 @@ Add this to your MCP settings file (e.g., \claude_desktop_config.json\):
     }
   }
 }
-\\\
+```
 
-## Tool: \generate_bmbrick_mosaic\
+## Tool: `generate_bmbrick_mosaic`
 
 Inputs:
-- \imagePath\: absolute local image path
-- \columns\: preview width (default 48, max 64)
-- \ows\: preview height (default 48, max 64)
-- \materialMode\: \square_1x1\ (default) or \ound_1x1\
-- \emoveBackground\: true/false
+- `imagePath`: absolute local image path
+- `columns`: preview width (default 48, max 64)
+- `rows`: preview height (default 48, max 64)
+- `materialMode`: `square_1x1` (default) or `round_1x1`
+- `removeBackground`: true/false
 
 The result is a local PNG preview path + a link to [bmbrick.com](https://bmbrick.com) for unlocking full HD deliverables.
 
