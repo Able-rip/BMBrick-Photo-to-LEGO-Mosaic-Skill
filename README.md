@@ -2,62 +2,62 @@
 
 Preview-only local mosaic generation for Agent and MCP workflows.
 
-`@bmbrick/agent-mosaic-skill` lets an agent convert a local image into a BMBrick LEGO-style mosaic preview on the user's machine. The generated preview uses the same canonical BMBrick preview pipeline as the website, includes a BMBrick watermark, and does not return project data such as placement matrices, parts lists, PDFs, or unwatermarked HD exports.
+\@bmbrick/agent-mosaic-skill\ lets an agent convert a local image into a BMBrick LEGO-style mosaic preview on the user's machine. The generated preview uses the same canonical BMBrick preview pipeline as the website, includes a BMBrick watermark, and does not return project data such as placement matrices, parts lists, PDFs, or unwatermarked HD exports.
+
+## Visual Previews
+
+Generated using the \generate_bmbrick_mosaic\ tool (3D render mode):
+
+| Original Photo | 48x48 Preview | 64x64 Preview |
+| :--- | :--- | :--- |
+| ![Original](https://github.com/Able-rip/agent-mosaic-skill/blob/main/assets/cat_original_photo.png?raw=true) | ![48x48](https://github.com/Able-rip/agent-mosaic-skill/blob/main/assets/cat_mosaic_preview.png?raw=true) | ![64x64](https://github.com/Able-rip/agent-mosaic-skill/blob/main/assets/cat_mosaic_64x64.png?raw=true) |
 
 ## Usage
 
-Build the obfuscated distribution:
+Run directly via \
+px\:
 
-```bash
-npm install
-npm run build
-```
-
-Run the MCP server:
-
-```bash
+\\\ash
 npx -y @bmbrick/agent-mosaic-skill
-```
+\\\
 
-The MCP server exposes one tool:
+### MCP Configuration
 
-```text
-generate_bmbrick_mosaic
-```
+Add this to your MCP settings file (e.g., \claude_desktop_config.json\):
+
+\\\json
+{
+  "mcpServers": {
+    "bmbrick": {
+      "command": "npx",
+      "args": ["-y", "@bmbrick/agent-mosaic-skill"]
+    }
+  }
+}
+\\\
+
+## Tool: \generate_bmbrick_mosaic\
 
 Inputs:
+- \imagePath\: absolute local image path
+- \columns\: preview width (default 48, max 64)
+- \ows\: preview height (default 48, max 64)
+- \materialMode\: \square_1x1\ (default) or \ound_1x1\
+- \emoveBackground\: true/false
 
-- `imagePath`: absolute local image path
-- `columns`: preview width in studs, default `48`, max `64`
-- `rows`: preview height in studs, default `48`, max `64`
-- `materialMode`: `square_1x1` or `round_1x1`
-- `renderMode`: `3D` only
-- `removeBackground`: lightweight local cleanup for white or transparent backgrounds
+The result is a local PNG preview path + a link to [bmbrick.com](https://bmbrick.com) for unlocking full HD deliverables.
 
-The result is a local PNG preview path plus `https://bmbrick.com` for unlocking the full project.
+## Boundaries
 
-Agent previews default to `48x48`, because square mosaics are the common case. Rectangular previews are allowed only when the caller intentionally requests a rectangular crop, such as `64x48` for a landscape image or `48x64` for a portrait image. The engine center-crops the source image to the requested aspect ratio before quantization; it never stretches or squashes the source.
-
-## Preview-Only Boundary
-
-This package intentionally returns only a watermarked preview image. It does not expose:
-
+This is a **preview-only** tool. It provides a watermarked visual reference but does not expose:
 - brick placement data
 - parts lists
 - PDF instructions
 - unwatermarked HD exports
-- reusable project files
 
-Users who want the complete project should upload the source image at [bmbrick.com](https://bmbrick.com).
+For the complete project, please visit [bmbrick.com](https://bmbrick.com).
 
-## Development
+## License
 
-The package syncs canonical preview core files from the parent BrickArt repository before every build:
-
-```bash
-npm run sync:core
-npm run build
-npm test
-```
-
-Do not edit copied core files inside `src/lib` by hand. Make canonical algorithm changes in the parent BrickArt core, then run `npm run sync:core`.
+- MCP Wrapper & Skill: MIT
+- Preview Engine: Restricted (Local watermarked preview use only)
