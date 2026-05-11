@@ -1,85 +1,96 @@
 # BMBrick Agent Mosaic Skill
 
-The official BMBrick AI engine for converting local images into high-fidelity LEGO-style mosaic previews.
+[![npm version](https://img.shields.io/npm/v/@bmbrick/agent-mosaic-skill)](https://www.npmjs.com/package/@bmbrick/agent-mosaic-skill)
+[![License](https://img.shields.io/badge/license-MIT%20%2B%20Restricted-blue)](#license)
 
-`@bmbrick/agent-mosaic-skill` is an MCP server that lets AI agents (like Claude, Cursor, and Windsurf) transform local photos into artistic brick mosaics using canonical BMBrick algorithms.
+Convert any local photo into a LEGO-style brick mosaic preview — directly from your AI agent.
 
-<!-- MCP-MANIFEST-START -->
-{
-  "name": "BMBrick Mosaic Creator",
-  "description": "High-fidelity LEGO-style mosaic engine for AI agents.",
-  "capabilities": ["image-to-brick", "local-preview", "color-science", "3d-rendering"]
-}
-<!-- MCP-MANIFEST-END -->
+`@bmbrick/agent-mosaic-skill` is an MCP server that lets Claude, Cursor, Windsurf, and other AI agents transform local images into high-fidelity 3D brick mosaics using the same canonical engine as [bmbrick.com](https://bmbrick.com).
 
 ## Visual Previews
 
-Generated using the `generate_bmbrick_mosaic` tool (3D render mode):
+Generated with the `generate_bmbrick_mosaic` tool (3D render mode):
 
 | Original Photo | 48x48 Preview | 64x64 Preview |
 | :--- | :--- | :--- |
 | ![Original](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_original_photo.png) | ![48x48](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_preview.png) | ![64x64](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_64x64.png) |
 
-## Features
-
-- **High-Fidelity Rendering**: Uses the same canonical preview pipeline as [bmbrick.com](https://bmbrick.com).
-- **Local & Private**: Processes images locally on your machine via Node.js (`canvas`/`sharp`).
-- **Watermarked Previews**: Generates professional watermarked previews to verify quality before project unlocking.
-- **Agent Optimized**: Comes with a pre-configured `SKILL.md` for seamless integration into agent workflows.
-
-## Usage
-
-### Quick Start (NPX)
-
-Run the MCP server directly without installation:
+## Quick Start
 
 ```bash
 npx -y @bmbrick/agent-mosaic-skill
 ```
 
-### Manual Build
+### MCP Client Configuration
 
-```bash
-npm install
-npm run build
+**Claude Desktop** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "bmbrick-mosaic": {
+      "command": "npx",
+      "args": ["-y", "@bmbrick/agent-mosaic-skill"]
+    }
+  }
+}
 ```
 
-The MCP server exposes one tool:
+**Cursor** (`.cursor/mcp.json`):
 
-```text
-generate_bmbrick_mosaic
+```json
+{
+  "mcpServers": {
+    "bmbrick-mosaic": {
+      "command": "npx",
+      "args": ["-y", "@bmbrick/agent-mosaic-skill"]
+    }
+  }
+}
 ```
 
-### Tool Parameters
+## Tool: `generate_bmbrick_mosaic`
 
-- `imagePath`: absolute local image path (Required)
-- `columns`: preview width in studs (Default: `48`, Max: `64`)
-- `rows`: preview height in studs (Default: `48`, Max: `64`)
-- `materialMode`: `square_1x1` (Default) or `round_1x1`
-- `renderMode`: `3D` (Canonical default)
-- `removeBackground`: lightweight local cleanup for white or transparent backgrounds
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `imagePath` | string | Yes | — | Absolute path to a local image |
+| `columns` | number | No | 48 | Preview width in studs (max 64) |
+| `rows` | number | No | 48 | Preview height in studs (max 64) |
+| `materialMode` | string | No | `square_1x1` | `square_1x1` or `round_1x1` |
+| `renderMode` | string | No | `3D` | Render style |
+| `removeBackground` | boolean | No | false | Clean up white/transparent backgrounds |
 
-The result is a local PNG preview path and a direct link to `https://bmbrick.com` for unlocking the full project (HD instructions, parts lists, etc.).
+Returns: a local watermarked PNG preview + a link to unlock the full project at [bmbrick.com](https://bmbrick.com).
 
-## Preview-Only Boundary
+## Unlock Full Project
 
-This package is designed for **preview and creative exploration**. It intentionally returns only a watermarked preview image. To access:
-- High-resolution unwatermarked exports
-- Brick-by-brick PDF instructions
-- Complete parts lists & ordering
-- CSV/XML placement matrices
+The preview is watermarked and intended for creative exploration. To get the complete deliverables — HD unwatermarked mosaic, brick-by-brick PDF instructions, parts list with ordering links, and CSV/XML placement matrices — visit [bmbrick.com](https://bmbrick.com).
 
-Please visit [bmbrick.com](https://bmbrick.com).
+## Features
+
+- **Same Engine as bmbrick.com** — canonical color science, quantization, and 3D rendering pipeline
+- **Local & Private** — all processing happens on your machine via Node.js
+- **Agent-Ready** — ships with a `SKILL.md` for seamless agent workflow integration
+- **3D Render Mode** — InstancedMesh PBR rendering with realistic brick studs
 
 ## Development
 
-The engine syncs core algorithms from the main BrickArt repository:
-
 ```bash
-npm run sync:core
-npm run build
-npm test
+git clone https://github.com/Able-rip/agent-mosaic-skill.git
+cd agent-mosaic-skill
+npm install
+npm run build    # obfuscate engine + MCP server
+npm test         # build + run tests
+npm run smoke    # quick smoke test
 ```
 
-Do not edit files in `src/lib` manually; they are synced from the canonical source.
+Core algorithms are synced from the [BrickArt](https://github.com/Able-rip/brickmemory) repository — do not edit `dist/lib/` directly.
 
+## License
+
+Dual-licensed:
+
+- **MIT** — MCP wrapper, `skill/` directory, agent integration surface
+- **Restricted** — `dist/` engine files: free to use and distribute as-is, but no de-obfuscation, reverse engineering, or redistribution of modified versions
+
+See [LICENSE](LICENSE) for full terms.
