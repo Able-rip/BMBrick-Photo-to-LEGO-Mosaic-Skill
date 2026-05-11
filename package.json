@@ -1,38 +1,46 @@
 {
-    "name":  "@bmbrick/agent-mosaic-skill",
-    "version":  "1.0.0",
-    "description":  "Preview-only local BMBrick mosaic generator for Agent and MCP workflows.",
-    "main":  "./dist/index.js",
-    "exports":  {
-                    ".":  "./dist/index.js",
-                    "./mcp":  "./dist/mcp-server.js"
-                },
-    "bin":  {
-                "agent-mosaic-skill":  "./dist/mcp-server.js"
-            },
-    "files":  [
-                  "dist",
-                  "skill",
-                  "README.md",
-                  "LICENSE"
-              ],
-    "scripts":  {
-                    "test":  "node --test test/*.test.mjs"
-                },
-    "keywords":  [
-                     "bmbrick",
-                     "mosaic",
-                     "lego",
-                     "mcp",
-                     "agent-skill"
-                 ],
-    "author":  "BMBrick",
-    "license":  "SEE LICENSE IN LICENSE",
-    "type":  "module",
-    "dependencies":  {
-                         "@modelcontextprotocol/sdk":  "^1.29.0",
-                         "canvas":  "^3.2.3",
-                         "javascript-obfuscator":  "^5.4.2",
-                         "sharp":  "^0.34.5"
-                     }
+  "name": "@bmbrick/agent-mosaic-skill",
+  "version": "1.0.0",
+  "description": "The official BMBrick AI engine for converting local images into high-fidelity LEGO-style mosaic previews.",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./mcp": "./dist/mcp-server.js"
+  },
+  "bin": {
+    "agent-mosaic-skill": "./dist/mcp-server.js"
+  },
+  "files": [
+    "dist",
+    "skill",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "sync:core": "node scripts/sync-core.js",
+    "build": "node scripts/build.js",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "smoke": "node test/smoke.mjs",
+    "prepack": "npm test"
+  },
+  "keywords": [
+    "bmbrick",
+    "mosaic",
+    "lego",
+    "mcp",
+    "model-context-protocol",
+    "agent-skill",
+    "pixel-art",
+    "image-processing",
+    "bricks"
+  ],
+  "author": "BMBrick",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "canvas": "^3.2.3",
+    "javascript-obfuscator": "^5.4.2",
+    "sharp": "^0.34.5"
+  }
 }
