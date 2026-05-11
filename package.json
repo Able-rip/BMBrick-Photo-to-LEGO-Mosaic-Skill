@@ -1,6 +1,6 @@
 {
   "name": "@bmbrick/agent-mosaic-skill",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The official BMBrick AI engine for converting local images into high-fidelity LEGO-style mosaic previews.",
   "main": "./dist/index.js",
   "exports": {
