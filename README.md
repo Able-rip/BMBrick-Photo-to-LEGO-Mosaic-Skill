@@ -75,17 +75,6 @@ The preview is watermarked and intended for creative exploration. To get the com
 
 ## Development
 
-```bash
-git clone https://github.com/Able-rip/agent-mosaic-skill.git
-cd agent-mosaic-skill
-npm install
-npm run build    # obfuscate engine + MCP server
-npm test         # build + run tests
-npm run smoke    # quick smoke test
-```
-
-Core algorithms are synced from the [BrickArt](https://github.com/Able-rip/brickmemory) repository — do not edit `dist/lib/` directly.
-
 ## License
 
 Dual-licensed:
