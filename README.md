@@ -12,6 +12,14 @@ The official BMBrick AI engine for converting local images into high-fidelity LE
 }
 <!-- MCP-MANIFEST-END -->
 
+## Visual Previews
+
+Generated using the `generate_bmbrick_mosaic` tool (3D render mode):
+
+| Original Photo | 48x48 Preview | 64x64 Preview |
+| :--- | :--- | :--- |
+| ![Original](https://github.com/Able-rip/agent-mosaic-skill/blob/main/assets/cat_original_photo.png?raw=true) | ![48x48](https://github.com/Able-rip/agent-mosaic-skill/blob/main/assets/cat_mosaic_preview.png?raw=true) | ![64x64](https://github.com/Able-rip/agent-mosaic-skill/blob/main/assets/cat_mosaic_64x64.png?raw=true) |
+
 ## Features
 
 - **High-Fidelity Rendering**: Uses the same canonical preview pipeline as [bmbrick.com](https://bmbrick.com).
