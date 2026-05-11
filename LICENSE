@@ -1,0 +1,40 @@
+BMBrick Mosaic Engine License
+
+This repository contains two licensing surfaces.
+
+1. Agent wrapper and skill materials
+
+The files under `skill/`, plus the MCP wrapper surface used to expose the
+`generate_bmbrick_mosaic` tool, may be used, copied, modified, and distributed
+under the MIT License:
+
+Copyright (c) 2026 BMBrick
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of these materials to deal in them without restriction, including without
+limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies, subject to this notice being included in all
+copies or substantial portions of the materials.
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+2. BMBrick preview engine distribution
+
+The obfuscated preview engine files distributed under `dist/` are licensed only
+for local generation of BMBrick watermarked preview images.
+
+You may:
+- use the preview engine locally through the provided MCP/CLI/API surfaces;
+- distribute the package unchanged as an Agent integration dependency.
+
+You may not:
+- remove, obscure, or bypass the BMBrick watermark;
+- reverse engineer, deobfuscate, or derive competing implementations from the
+  preview engine;
+- modify and redistribute the preview engine;
+- expose placement data, parts lists, unwatermarked HD images, PDFs, or project
+  reconstruction data from the preview engine.
+
+All rights not expressly granted are reserved by BMBrick.
