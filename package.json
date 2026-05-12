@@ -1,7 +1,12 @@
 {
   "name": "@bmbrick/agent-mosaic-skill",
+  "mcpName": "io.github.Able-rip/agent-mosaic-skill",
   "version": "1.0.1",
   "description": "The official BMBrick AI engine for converting local images into high-fidelity LEGO-style mosaic previews.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Able-rip/agent-mosaic-skill.git"
+  },
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
