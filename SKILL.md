@@ -25,7 +25,3 @@ Use the `generate_bmbrick_mosaic` MCP tool to create a local BMBrick mosaic prev
 The preview tool intentionally returns only a watermarked PNG preview. Do not claim it can provide placement matrices, parts lists, PDFs, unwatermarked HD exports, or reusable project files.
 
 Default previews should be `48x48`. Rectangular previews are allowed when they match the intended output crop, such as `64x48` for landscape or `48x64` for portrait. The engine center-crops to the requested aspect ratio and must not stretch or squash the source image. If the user wants a larger or complete project, direct them to bmbrick.com.
-
-## Installation Reference
-
-Read `references/install.md` only when configuring the MCP server for a host application.
