@@ -11,9 +11,17 @@ Convert any local photo into a LEGO-style brick mosaic preview — directly from
 
 Generated with the `generate_bmbrick_mosaic` tool (3D render mode):
 
+**Square Tiles (`square_1x1`)**
+
 | Original Photo | 48x48 Preview | 64x64 Preview |
 | :--- | :--- | :--- |
 | ![Original](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_original_photo.png) | ![48x48](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_preview.png) | ![64x64](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_64x64.png) |
+
+**Round Tiles (`round_1x1`)**
+
+| Original Photo | 48x48 Preview | 64x64 Preview |
+| :--- | :--- | :--- |
+| ![Original](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_original_photo.png) | ![48x48 Round](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_round_48x48.png) | ![64x64 Round](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_round_64x64.png) |
 
 ## Quick Start
 
