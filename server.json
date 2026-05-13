@@ -6,12 +6,12 @@
     "url": "https://github.com/Able-rip/agent-mosaic-skill",
     "source": "github"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@bmbrick/agent-mosaic-skill",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "transport": {
         "type": "stdio"
       }
