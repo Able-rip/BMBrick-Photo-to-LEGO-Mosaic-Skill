@@ -11,7 +11,7 @@ import {
   buildReliefMask
 } from "./fidelity-pipeline.mjs";
 
-const LIGHTNESS_WEIGHT = 2.0;
+const LIGHTNESS_WEIGHT = 0.8;
 const ALPHA_THRESHOLD = 20;
 const MATERIAL_RAMP_PENALTY = 0.14;
 
@@ -376,9 +376,9 @@ function normalizeLocalManifoldConfig(spatialStabilization = {}) {
   return config;
 }
 
-function weightedOklabDistance(a, b) {
+function weightedOklabDistance(a, b, lightnessWeight = LIGHTNESS_WEIGHT) {
   return Math.sqrt(
-    (LIGHTNESS_WEIGHT * ((a.L - b.L) ** 2)) +
+    (lightnessWeight * ((a.L - b.L) ** 2)) +
     ((a.a - b.a) ** 2) +
     ((a.b - b.b) ** 2)
   );
@@ -468,9 +468,13 @@ function getClosestColor(r, g, b, options) {
     rampBias = null,
     blockAnchorLab = null,
     blockAnchorWeight = 0,
-    localManifoldBias = null
+    localManifoldBias = null,
+    darkCpBoost = 1,
+    darkLuminanceThreshold = 0.25,
+    lightnessWeight = LIGHTNESS_WEIGHT
   } = options;
   const lab = rgbToOklab(r, g, b);
+  const effectivePenaltyMult = penaltyMultiplier * (lab.L < darkLuminanceThreshold ? darkCpBoost : 1);
   let bestScore = Number.POSITIVE_INFINITY;
   let bestDist = Number.POSITIVE_INFINITY;
   let bestIdx = 0;
@@ -480,14 +484,14 @@ function getClosestColor(r, g, b, options) {
     const dL = lab.L - paletteLab[off];
     const dA = lab.a - paletteLab[off + 1];
     const dB = lab.b - paletteLab[off + 2];
-    const dist = Math.sqrt((LIGHTNESS_WEIGHT * dL * dL) + (dA * dA) + (dB * dB));
+    const dist = Math.sqrt((lightnessWeight * dL * dL) + (dA * dA) + (dB * dB));
     const candidateId = colorIdFor(colors[i]);
     const penalty = continuityPenalty({
       candidateId,
       leftId: previousColorId,
       topId: topColorId,
       materialMode
-    }) * penaltyMultiplier;
+    }) * effectivePenaltyMult;
     const rampPenalty = rampBias?.weight > 0 && !rampBias.allowedIds.has(candidateId)
       ? rampBias.weight * rampBias.penalty
       : 0;
@@ -496,7 +500,7 @@ function getClosestColor(r, g, b, options) {
       const bL = blockAnchorLab[0] - paletteLab[off];
       const bA = blockAnchorLab[1] - paletteLab[off + 1];
       const bB = blockAnchorLab[2] - paletteLab[off + 2];
-      blockPenalty = blockAnchorWeight * Math.sqrt((LIGHTNESS_WEIGHT * bL * bL) + (bA * bA) + (bB * bB));
+      blockPenalty = blockAnchorWeight * Math.sqrt((lightnessWeight * bL * bL) + (bA * bA) + (bB * bB));
     }
     const manifoldPenalty = scoreLocalManifoldPenalty({
       candidateLab: { L: paletteLab[off], a: paletteLab[off + 1], b: paletteLab[off + 2] },
@@ -1159,6 +1163,14 @@ export function quantize(opts) {
     materialRampMode = "portrait",
     spatialStabilization = {}
   } = opts;
+  const tuned = {
+    darkCpBoost: 1.0,
+    darkLuminanceThreshold: 0.25,
+    paletteCpExponent: 4.0,
+    pruningErrorBudget: 0.08,
+    lightnessWeight: LIGHTNESS_WEIGHT,
+    ...(opts.tuning || {})
+  };
   const blockAnchorConfig = {
     enabled: false,
     blockSize: 4,
@@ -1169,7 +1181,7 @@ export function quantize(opts) {
   };
   if (spatialStabilization.blockAnchor === true) blockAnchorConfig.enabled = true;
   const despeckleConfig = {
-    enabled: false,
+    enabled: true,
     ...(spatialStabilization.despeckle && typeof spatialStabilization.despeckle === "object"
       ? spatialStabilization.despeckle
       : {})
@@ -1228,7 +1240,7 @@ export function quantize(opts) {
           const dL = avgLab.L - paletteLab[off];
           const dA = avgLab.a - paletteLab[off + 1];
           const dB = avgLab.b - paletteLab[off + 2];
-          const d = LIGHTNESS_WEIGHT * dL * dL + dA * dA + dB * dB;
+          const d = tuned.lightnessWeight * dL * dL + dA * dA + dB * dB;
           if (d < bestD) { bestD = d; bestJ = j; }
         }
         blockColors[by * blockCols + bx] = {
@@ -1239,6 +1251,8 @@ export function quantize(opts) {
     }
   }
   const BLOCK_ANCHOR_WEIGHT = blockAnchorConfig.enabled ? blockAnchorConfig.weight : 0;
+  const paletteSizeRatio = colors.length / 42;
+  const PALETTE_SIZE_SCALE = Math.min(4.0, Math.max(1.0, Math.pow(paletteSizeRatio, tuned.paletteCpExponent)));
   const originalData = new Uint8ClampedArray(data);
   const optimizedPreviewData = new Uint8ClampedArray(data.length);
   const errorMap = new Uint8ClampedArray(width * height);
@@ -1270,7 +1284,6 @@ export function quantize(opts) {
         ? (x > 0 ? selectedColorIds[offset - 1] : null)
         : (x < width - 1 ? selectedColorIds[offset + 1] : null);
       const topColorId = y > 0 ? selectedColorIds[offset - width] : null;
-
       const sR = smoothed[index];
       const sG = smoothed[index + 1];
       const sB = smoothed[index + 2];
@@ -1294,11 +1307,14 @@ export function quantize(opts) {
         previousColorId,
         topColorId,
         materialMode,
-        penaltyMultiplier: policy.penaltyMultiplier,
+        penaltyMultiplier: policy.penaltyMultiplier * PALETTE_SIZE_SCALE,
         rampBias: materialRamp.cellBiases[offset],
         blockAnchorLab: blockAnchor?.lab ?? null,
         blockAnchorWeight: blockAnchor ? BLOCK_ANCHOR_WEIGHT : 0,
-        localManifoldBias
+        localManifoldBias,
+        darkCpBoost: tuned.darkCpBoost,
+        darkLuminanceThreshold: tuned.darkLuminanceThreshold,
+        lightnessWeight: tuned.lightnessWeight
       });
       const targetRGB = hexToRgb(closestColor.hex);
       const selectedId = colorIdFor(closestColor);
@@ -1377,15 +1393,18 @@ export function quantize(opts) {
 
   let despeckleChanges = 0;
   if (despeckleConfig.enabled) {
+    for (let pass = 0; pass < 2; pass += 1) {
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
         const index = (y * width) + x;
         if (analysis.regionMap[index] === "transparent") continue;
+        if (pass > 0 && !(analysis.regionMap[index] === "flat" || (analysis.localSpreadMap?.[index] ?? 0) < 3)) continue;
         const currentId = selectedColorIds[index];
         if (!currentId) continue;
         const isFlatRegion = analysis.regionMap[index] === "flat" ||
           (analysis.localSpreadMap?.[index] ?? 0) < 3;
         const neighborCounts = new Map();
+        const neighborChromas = [];
         let sameCount = 0;
         let totalNeighbors = 0;
         for (let ny = -2; ny <= 2; ny += 1) {
@@ -1398,6 +1417,8 @@ export function quantize(opts) {
             const nId = selectedColorIds[ni];
             if (!nId) continue;
             totalNeighbors += 1;
+            const nLab = rgbToOklab(optimizedPreviewData[ni * 4], optimizedPreviewData[ni * 4 + 1], optimizedPreviewData[ni * 4 + 2]);
+            neighborChromas.push(Math.sqrt(nLab.a * nLab.a + nLab.b * nLab.b));
             if (nId === currentId) {
               sameCount += 1;
               continue;
@@ -1423,15 +1444,21 @@ export function quantize(opts) {
             optimizedPreviewData[index * 4 + 1],
             optimizedPreviewData[index * 4 + 2]
           );
+          const Ccur = Math.sqrt(currentLab.a * currentLab.a + currentLab.b * currentLab.b);
+          neighborChromas.sort((a, b) => a - b);
+          const Cmed = neighborChromas[Math.floor(neighborChromas.length / 2)];
+          if (!isFlatRegion && Ccur <= Cmed + 0.03) continue;
           const replacement = colorsById.get(bestId);
           const replRgb = hexToRgb(replacement.hex);
           const replLab = rgbToOklab(replRgb.r, replRgb.g, replRgb.b);
+          const Crepl = Math.sqrt(replLab.a * replLab.a + replLab.b * replLab.b);
+          if (Ccur <= Crepl + 0.03) continue;
           const okDist = Math.sqrt(
-            (LIGHTNESS_WEIGHT * (currentLab.L - replLab.L) ** 2) +
+            (tuned.lightnessWeight * (currentLab.L - replLab.L) ** 2) +
             (currentLab.a - replLab.a) ** 2 +
             (currentLab.b - replLab.b) ** 2
           );
-          if (okDist < 0.20) {
+          if (okDist < 0.15) {
             selectedColorIds[index] = bestId;
             optimizedPreviewData[index * 4] = replRgb.r;
             optimizedPreviewData[index * 4 + 1] = replRgb.g;
@@ -1439,6 +1466,148 @@ export function quantize(opts) {
             despeckleChanges += 1;
           }
         }
+      }
+    }
+    }
+  }
+
+  let regionSmoothChanges = 0;
+  for (let rPass = 0; rPass < 2; rPass += 1) {
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const index = (y * width) + x;
+        const currentId = selectedColorIds[index];
+        if (!currentId) continue;
+        const regionType = analysis.regionMap[index];
+        if (regionType === "detail") continue;
+        const isFlat = regionType === "flat";
+        const radius = isFlat ? 2 : 1;
+        if (!isFlat && analysis.edgeMap[index] > 16) continue;
+
+        const neighborCounts = new Map();
+        let totalN = 0;
+        for (let ny = -radius; ny <= radius; ny += 1) {
+          for (let nx = -radius; nx <= radius; nx += 1) {
+            if (nx === 0 && ny === 0) continue;
+            const px = x + nx;
+            const py = y + ny;
+            if (px < 0 || px >= width || py < 0 || py >= height) continue;
+            const ni = py * width + px;
+            const nId = selectedColorIds[ni];
+            if (!nId) continue;
+            totalN += 1;
+            neighborCounts.set(nId, (neighborCounts.get(nId) ?? 0) + 1);
+          }
+        }
+        const minNeighbors = isFlat ? 8 : 3;
+        if (totalN < minNeighbors) continue;
+
+        let bestId = null;
+        let bestCount = 0;
+        for (const [candidateId, count] of neighborCounts) {
+          if (count > bestCount) { bestId = candidateId; bestCount = count; }
+        }
+
+        const replaceThreshold = isFlat ? 5 : 3;
+        if (bestId && bestId !== currentId && bestCount >= replaceThreshold && colorsById.has(bestId)) {
+          const currentLab = rgbToOklab(
+            optimizedPreviewData[index * 4],
+            optimizedPreviewData[index * 4 + 1],
+            optimizedPreviewData[index * 4 + 2]
+          );
+          const replacement = colorsById.get(bestId);
+          const replRgb = hexToRgb(replacement.hex);
+          const replLab = rgbToOklab(replRgb.r, replRgb.g, replRgb.b);
+          const okDist = Math.sqrt(
+            (tuned.lightnessWeight * (currentLab.L - replLab.L) ** 2) +
+            (currentLab.a - replLab.a) ** 2 +
+            (currentLab.b - replLab.b) ** 2
+          );
+          const okDistLimit = 0.12;
+          if (okDist < okDistLimit) {
+            selectedColorIds[index] = bestId;
+            optimizedPreviewData[index * 4] = replRgb.r;
+            optimizedPreviewData[index * 4 + 1] = replRgb.g;
+            optimizedPreviewData[index * 4 + 2] = replRgb.b;
+            regionSmoothChanges += 1;
+          }
+        }
+      }
+    }
+  }
+
+  let colorPruneChanges = 0;
+  const colorFreq = new Map();
+  for (let i = 0; i < selectedColorIds.length; i += 1) {
+    const cid = selectedColorIds[i];
+    if (!cid) continue;
+    colorFreq.set(cid, (colorFreq.get(cid) ?? 0) + 1);
+  }
+
+  if (tuned.pruningErrorBudget > 0 && colorFreq.size > 1 && coloredPixels > 0) {
+    const usedColorIds = [...colorFreq.keys()];
+    const labMap = new Map();
+    for (const cid of usedColorIds) {
+      const c = colorsById.get(cid);
+      if (!c) continue;
+      const rgb = hexToRgb(c.hex);
+      labMap.set(cid, rgbToOklab(rgb.r, rgb.g, rgb.b));
+    }
+    const candidates = [];
+    for (const cid of usedColorIds) {
+      const labA = labMap.get(cid);
+      if (!labA) continue;
+      let bestOtherId = null;
+      let bestOkDist = Infinity;
+      for (const oid of usedColorIds) {
+        if (oid === cid) continue;
+        const labB = labMap.get(oid);
+        if (!labB) continue;
+        const d = Math.sqrt(
+          tuned.lightnessWeight * (labA.L - labB.L) ** 2 +
+          (labA.a - labB.a) ** 2 +
+          (labA.b - labB.b) ** 2
+        );
+        if (d < bestOkDist) { bestOkDist = d; bestOtherId = oid; }
+      }
+      if (bestOtherId === null) continue;
+      const freq = colorFreq.get(cid);
+      candidates.push({ cid, nearestId: bestOtherId, okDist: bestOkDist, cost: freq * bestOkDist });
+    }
+    candidates.sort((a, b) => a.cost - b.cost);
+    const totalErrorBudget = totalError * tuned.pruningErrorBudget;
+    let cumulative = 0;
+    const pruneMap = new Map();
+    for (const c of candidates) {
+      if (cumulative + c.cost > totalErrorBudget) break;
+      pruneMap.set(c.cid, c.nearestId);
+      cumulative += c.cost;
+    }
+    function resolveTarget(cid) {
+      let cur = cid;
+      const visited = new Set();
+      while (pruneMap.has(cur) && !visited.has(cur)) {
+        visited.add(cur);
+        const next = pruneMap.get(cur);
+        if (next === cur) break;
+        cur = next;
+      }
+      return cur;
+    }
+    if (pruneMap.size > 0) {
+      for (let i = 0; i < selectedColorIds.length; i += 1) {
+        const cid = selectedColorIds[i];
+        if (!cid) continue;
+        if (!pruneMap.has(cid)) continue;
+        const target = resolveTarget(cid);
+        if (target === cid || !colorsById.has(target)) continue;
+        const repl = colorsById.get(target);
+        const rr = hexToRgb(repl.hex);
+        selectedColorIds[i] = target;
+        optimizedPreviewData[i * 4] = rr.r;
+        optimizedPreviewData[i * 4 + 1] = rr.g;
+        optimizedPreviewData[i * 4 + 2] = rr.b;
+        colorPruneChanges += 1;
       }
     }
   }
@@ -1484,6 +1653,8 @@ export function quantize(opts) {
       cleanupChanges,
       textureCleanupChanges,
       despeckleChanges,
+      regionSmoothChanges,
+      colorPruneChanges,
       blockAnchor: {
         enabled: blockAnchorConfig.enabled,
         blockSize: BLOCK_SIZE,
