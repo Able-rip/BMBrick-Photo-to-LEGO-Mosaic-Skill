@@ -11,7 +11,7 @@ import {
   buildReliefMask
 } from "./fidelity-pipeline.mjs";
 
-const LIGHTNESS_WEIGHT = 0.8;
+const LIGHTNESS_WEIGHT = 0.4;
 const ALPHA_THRESHOLD = 20;
 const MATERIAL_RAMP_PENALTY = 0.14;
 
@@ -339,6 +339,25 @@ export function analyzeRegionMap(data, width, height) {
   return { regionMap, alphaMask, localSpreadMap, mediumSpreadMap, edgeMap, regionCounts };
 }
 
+// Surface-type priority for hex-collision dedup. Lower number = preferred representative
+// when multiple palette entries share the same hex. solid is the most "plain" interpretation
+// so users see the most expected color id when ordering parts.
+const SURFACE_PRIORITY_DEDUP = { solid: 0, unique: 1, milky: 2, transparent: 3, metallic: 4 };
+
+function dedupeColorsByHex(colors) {
+  const byHex = new Map();
+  for (const c of colors) {
+    if (!c || !c.hex) continue;
+    const key = c.hex.toUpperCase();
+    const existing = byHex.get(key);
+    if (!existing) { byHex.set(key, c); continue; }
+    const eP = SURFACE_PRIORITY_DEDUP[existing.surface_type] ?? 99;
+    const cP = SURFACE_PRIORITY_DEDUP[c.surface_type] ?? 99;
+    if (cP < eP) byHex.set(key, c);
+  }
+  return [...byHex.values()];
+}
+
 function buildPalette(colors) {
   const lab = new Float32Array(colors.length * 3);
   const colorsById = new Map();
@@ -471,10 +490,28 @@ function getClosestColor(r, g, b, options) {
     localManifoldBias = null,
     darkCpBoost = 1,
     darkLuminanceThreshold = 0.25,
-    lightnessWeight = LIGHTNESS_WEIGHT
+    lightnessWeight = LIGHTNESS_WEIGHT,
+    achromaticDarkLuma = 0.25,
+    achromaticDarkChroma = 0.02,
+    achromaticDarkWeight = 0,
+    achromaticBrightLuma = 0.80,
+    achromaticBrightChroma = 0.02,
+    achromaticBrightWeight = 0
   } = options;
   const lab = rgbToOklab(r, g, b);
   const effectivePenaltyMult = penaltyMultiplier * (lab.L < darkLuminanceThreshold ? darkCpBoost : 1);
+  const inputChroma = Math.sqrt(lab.a * lab.a + lab.b * lab.b);
+  // Soft ramp: bias factor 1 when input is purely neutral, decays to 0 as input becomes chromatic.
+  // Two halves:
+  //   Dark side  — only active when L < achromaticDarkLuma (e.g., dark backgrounds shouldn't pick brown)
+  //   Bright side — only active when L > achromaticBrightLuma (e.g., white shouldn't pick cream/purple)
+  const darkChromaRamp = Math.max(0, 1 - inputChroma / achromaticDarkChroma);
+  const darkLumaRamp = Math.max(0, 1 - lab.L / achromaticDarkLuma);
+  const darkBiasStrength = achromaticDarkWeight * darkChromaRamp * darkLumaRamp;
+  const brightChromaRamp = Math.max(0, 1 - inputChroma / achromaticBrightChroma);
+  const brightLumaRamp = Math.max(0, (lab.L - achromaticBrightLuma) / (1 - achromaticBrightLuma));
+  const brightBiasStrength = achromaticBrightWeight * brightChromaRamp * brightLumaRamp;
+  const biasStrength = darkBiasStrength + brightBiasStrength;
   let bestScore = Number.POSITIVE_INFINITY;
   let bestDist = Number.POSITIVE_INFINITY;
   let bestIdx = 0;
@@ -485,6 +522,13 @@ function getClosestColor(r, g, b, options) {
     const dA = lab.a - paletteLab[off + 1];
     const dB = lab.b - paletteLab[off + 2];
     const dist = Math.sqrt((lightnessWeight * dL * dL) + (dA * dA) + (dB * dB));
+    let achromaticBias = 0;
+    if (biasStrength > 0) {
+      const candA = paletteLab[off + 1];
+      const candB = paletteLab[off + 2];
+      const candChroma = Math.sqrt(candA * candA + candB * candB);
+      achromaticBias = candChroma * biasStrength;
+    }
     const candidateId = colorIdFor(colors[i]);
     const penalty = continuityPenalty({
       candidateId,
@@ -506,7 +550,7 @@ function getClosestColor(r, g, b, options) {
       candidateLab: { L: paletteLab[off], a: paletteLab[off + 1], b: paletteLab[off + 2] },
       bias: localManifoldBias
     });
-    const score = dist + penalty + rampPenalty + blockPenalty + manifoldPenalty;
+    const score = dist + penalty + rampPenalty + blockPenalty + manifoldPenalty + achromaticBias;
     if (score < bestScore) {
       bestScore = score;
       bestDist = dist;
@@ -517,9 +561,36 @@ function getClosestColor(r, g, b, options) {
   return { closestColor: colors[bestIdx], distance: bestDist };
 }
 
-function sharpen(data, width, height) {
-  const amount = 0.4;
+function sharpen(data, width, height, amount = 0.4, maxDelta = 30, mode = "per_channel") {
+  if (amount <= 0) return;
   const copy = new Uint8ClampedArray(data);
+  if (mode === "luma") {
+    function lumaAt(x, y) {
+      const i = (y * width + x) * 4;
+      return copy[i] * 0.299 + copy[i + 1] * 0.587 + copy[i + 2] * 0.114;
+    }
+    for (let y = 1; y < height - 1; y += 1) {
+      for (let x = 1; x < width - 1; x += 1) {
+        const cY = lumaAt(x, y);
+        const tY = lumaAt(x, y - 1);
+        const bY = lumaAt(x, y + 1);
+        const lY = lumaAt(x - 1, y);
+        const rY = lumaAt(x + 1, y);
+        const edgeY = cY * 4 - tY - bY - lY - rY;
+        let delta = edgeY * amount;
+        if (delta > maxDelta) delta = maxDelta;
+        else if (delta < -maxDelta) delta = -maxDelta;
+        const index = (y * width + x) * 4;
+        data[index] = clampByte(copy[index] + delta);
+        data[index + 1] = clampByte(copy[index + 1] + delta);
+        data[index + 2] = clampByte(copy[index + 2] + delta);
+      }
+    }
+    return;
+  }
+  // Default: per-channel sharpen with per-channel maxDelta clamp.
+  // Clamp prevents pathological isolated-dark-chroma amplification while
+  // preserving classic Laplacian highlight punch for typical photos.
   for (let y = 1; y < height - 1; y += 1) {
     for (let x = 1; x < width - 1; x += 1) {
       const index = (y * width + x) * 4;
@@ -530,8 +601,29 @@ function sharpen(data, width, height) {
         const right = copy[(y * width + (x + 1)) * 4 + c];
         const center = copy[index + c];
         const edge = (center * 4) - top - bottom - left - right;
-        data[index + c] = clampByte(center + edge * amount);
+        let delta = edge * amount;
+        if (delta > maxDelta) delta = maxDelta;
+        else if (delta < -maxDelta) delta = -maxDelta;
+        data[index + c] = clampByte(center + delta);
       }
+    }
+  }
+}
+
+function contrastBoost(data, amount = 1.0, shadowCutoff = 80) {
+  // Shadow-only contrast: gamma > 1 applied to pixels with luma < cutoff.
+  // Mid-tones and highlights untouched. Suppresses chroma noise in shadows
+  // (they collapse toward 0) without disturbing skin tones.
+  if (amount <= 1.0) return;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < ALPHA_THRESHOLD) continue;
+    const luma = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    if (luma >= shadowCutoff) continue;
+    // Smooth roll-off: full effect at luma=0, ramps to 0 at luma=cutoff
+    const t = luma / shadowCutoff;
+    const factor = Math.pow(t, amount) / Math.max(t, 1e-6); // result/orig ratio
+    for (let c = 0; c < 3; c += 1) {
+      data[i + c] = clampByte(data[i + c] * factor);
     }
   }
 }
@@ -684,7 +776,11 @@ function chromaAlignment(sample, anchor) {
   const sampleChroma = Math.hypot(sampleLab.a, sampleLab.b);
   const anchorChroma = Math.hypot(anchorLab.a, anchorLab.b);
   if (anchorChroma < 0.01) return 1;
-  if (sampleChroma < 0.008) return sample.luma <= anchor.luma + 18 ? 0.65 : 0;
+  if (sampleChroma < 0.008) {
+    const family = materialFamilyForAnchor(anchor);
+    if (family === "warmDark" || family === "coolDark") return 0;
+    return sample.luma <= anchor.luma + 18 ? 0.65 : 0;
+  }
   return ((sampleLab.a * anchorLab.a) + (sampleLab.b * anchorLab.b)) / (sampleChroma * anchorChroma);
 }
 
@@ -1154,7 +1250,7 @@ export function quantize(opts) {
     imageData,
     cols: width,
     rows: height,
-    colors,
+    colors: rawColors,
     ditheringMode = "subtle",
     materialMode = "square_1x1",
     boardCompensation = { enabled: false, backgroundHex: "#F3EFE7" },
@@ -1163,14 +1259,43 @@ export function quantize(opts) {
     materialRampMode = "portrait",
     spatialStabilization = {}
   } = opts;
+  // Dedupe palette by hex: when multiple canonical_color_ids share the same hex
+  // (Webrick has e.g. metallic:B88746 ≡ unique:B88746), keep one representative
+  // ranked by SURFACE_PRIORITY_DEDUP. Prevents algorithm from arbitrarily
+  // splitting visually-identical pixels across non-distinguishable color ids.
+  const colors = (opts.tuning?.skipPaletteDedup) ? rawColors : dedupeColorsByHex(rawColors);
   const tuned = {
     darkCpBoost: 1.0,
     darkLuminanceThreshold: 0.25,
     paletteCpExponent: 4.0,
-    pruningErrorBudget: 0.08,
+    pruningErrorBudget: 0.20,
     lightnessWeight: LIGHTNESS_WEIGHT,
+    lightnessWeightFlat: null,
+    lightnessWeightDetail: null,
+    bilateralSigmaColor: 10.0,
+    bilateralSigmaSpace: 2.5,
+    bilateralRadius: 4,
+    skipSharpen: false,
+    sharpenAmount: 0.4,
+    sharpenMaxDelta: 999,
+    sharpenMode: "per_channel",
+    achromaticDarkLuma: 0.30,
+    achromaticDarkChroma: 0.05,
+    achromaticDarkWeight: 3.0,
+    achromaticBrightLuma: 0.85,
+    achromaticBrightChroma: 0.04,
+    achromaticBrightWeight: 4.0,
+    contrastBoost: 1.1,
+    skipToneMap: false,
+    skipBilateral: false,
+    skipRegionSmoother: false,
+    regionSmootherOkDistLimit: 0.06,
+    pruningMaxFreqFraction: 0.05,
     ...(opts.tuning || {})
   };
+  const lwGradient = tuned.lightnessWeight;
+  const lwFlat = (tuned.lightnessWeightFlat ?? tuned.lightnessWeight);
+  const lwDetail = (tuned.lightnessWeightDetail ?? tuned.lightnessWeight);
   const blockAnchorConfig = {
     enabled: false,
     blockSize: 4,
@@ -1192,14 +1317,17 @@ export function quantize(opts) {
   const data = new Uint8ClampedArray(imageData);
   const { lab: paletteLab, colorsById } = buildPalette(colors);
 
-  sharpen(data, width, height);
-  toneMap(data);
+  contrastBoost(data, tuned.contrastBoost);
+  if (!tuned.skipSharpen) sharpen(data, width, height, tuned.sharpenAmount, tuned.sharpenMaxDelta, tuned.sharpenMode);
+  if (!tuned.skipToneMap) toneMap(data);
 
-  const smoothed = bilateralFilter(data, width, height, {
-    radius: 3,
-    sigmaSpace: 2.5,
-    sigmaColor: 20.0
-  });
+  const smoothed = tuned.skipBilateral
+    ? new Uint8ClampedArray(data)
+    : bilateralFilter(data, width, height, {
+        radius: tuned.bilateralRadius,
+        sigmaSpace: tuned.bilateralSigmaSpace,
+        sigmaColor: tuned.bilateralSigmaColor
+      });
   const analysis = analyzeRegionMap(smoothed, width, height);
   const materialRamp = analyzeMaterialRampContext(smoothed, width, height, colors, materialRampMode, analysis);
   const manifoldSourceData = new Uint8ClampedArray(smoothed);
@@ -1301,6 +1429,7 @@ export function quantize(opts) {
         config: localManifoldConfig
       });
       if (localManifoldBias) localManifoldCells += 1;
+      const effectiveLw = region === "detail" ? lwDetail : region === "flat" ? lwFlat : lwGradient;
       const { closestColor, distance } = getClosestColor(sR, sG, sB, {
         colors,
         paletteLab,
@@ -1314,7 +1443,13 @@ export function quantize(opts) {
         localManifoldBias,
         darkCpBoost: tuned.darkCpBoost,
         darkLuminanceThreshold: tuned.darkLuminanceThreshold,
-        lightnessWeight: tuned.lightnessWeight
+        lightnessWeight: effectiveLw,
+        achromaticDarkLuma: tuned.achromaticDarkLuma,
+        achromaticDarkChroma: tuned.achromaticDarkChroma,
+        achromaticDarkWeight: tuned.achromaticDarkWeight,
+        achromaticBrightLuma: tuned.achromaticBrightLuma,
+        achromaticBrightChroma: tuned.achromaticBrightChroma,
+        achromaticBrightWeight: tuned.achromaticBrightWeight
       });
       const targetRGB = hexToRgb(closestColor.hex);
       const selectedId = colorIdFor(closestColor);
@@ -1454,7 +1589,7 @@ export function quantize(opts) {
           const Crepl = Math.sqrt(replLab.a * replLab.a + replLab.b * replLab.b);
           if (Ccur <= Crepl + 0.03) continue;
           const okDist = Math.sqrt(
-            (tuned.lightnessWeight * (currentLab.L - replLab.L) ** 2) +
+            ((currentLab.L - replLab.L) ** 2) +
             (currentLab.a - replLab.a) ** 2 +
             (currentLab.b - replLab.b) ** 2
           );
@@ -1472,6 +1607,7 @@ export function quantize(opts) {
   }
 
   let regionSmoothChanges = 0;
+  if (!tuned.skipRegionSmoother) {
   for (let rPass = 0; rPass < 2; rPass += 1) {
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
@@ -1519,11 +1655,11 @@ export function quantize(opts) {
           const replRgb = hexToRgb(replacement.hex);
           const replLab = rgbToOklab(replRgb.r, replRgb.g, replRgb.b);
           const okDist = Math.sqrt(
-            (tuned.lightnessWeight * (currentLab.L - replLab.L) ** 2) +
+            ((currentLab.L - replLab.L) ** 2) +
             (currentLab.a - replLab.a) ** 2 +
             (currentLab.b - replLab.b) ** 2
           );
-          const okDistLimit = 0.12;
+          const okDistLimit = tuned.regionSmootherOkDistLimit;
           if (okDist < okDistLimit) {
             selectedColorIds[index] = bestId;
             optimizedPreviewData[index * 4] = replRgb.r;
@@ -1534,6 +1670,7 @@ export function quantize(opts) {
         }
       }
     }
+  }
   }
 
   let colorPruneChanges = 0;
@@ -1564,7 +1701,7 @@ export function quantize(opts) {
         const labB = labMap.get(oid);
         if (!labB) continue;
         const d = Math.sqrt(
-          tuned.lightnessWeight * (labA.L - labB.L) ** 2 +
+          (labA.L - labB.L) ** 2 +
           (labA.a - labB.a) ** 2 +
           (labA.b - labB.b) ** 2
         );
@@ -1578,7 +1715,10 @@ export function quantize(opts) {
     const totalErrorBudget = totalError * tuned.pruningErrorBudget;
     let cumulative = 0;
     const pruneMap = new Map();
+    const pruneMinPixels = Math.max(1, Math.floor(coloredPixels * tuned.pruningMaxFreqFraction));
     for (const c of candidates) {
+      const freq = colorFreq.get(c.cid);
+      if (freq > pruneMinPixels) continue;
       if (cumulative + c.cost > totalErrorBudget) break;
       pruneMap.set(c.cid, c.nearestId);
       cumulative += c.cost;
