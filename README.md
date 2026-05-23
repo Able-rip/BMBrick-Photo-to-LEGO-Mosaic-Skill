@@ -81,6 +81,14 @@ The preview is watermarked and intended for creative exploration. To get the com
 - **Agent-Ready** — ships with a `SKILL.md` for seamless agent workflow integration
 - **3D Render Mode** — InstancedMesh PBR rendering with realistic brick studs
 
+## Engineering Docs
+
+Deep technical reference for the color quantization pipeline that powers this skill and [bmbrick.com](https://www.bmbrick.com):
+
+- **Color quantization pipeline: principles, history, and lessons** — current architecture, architectural decisions, verified principles, failed experiments from 25+ versions of iteration, and parameter sensitivity reference.
+  - 🇬🇧 [English](./docs/color-pipeline.md)
+  - 🇨🇳 [中文](./docs/color-pipeline.zh-CN.md)
+
 ## Development
 
 ## License
