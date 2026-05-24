@@ -27,6 +27,9 @@
     "smoke": "node test/smoke.mjs",
     "prepack": "npm test"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "lego",
     "mosaic",
