@@ -1,7 +1,7 @@
 {
   "name": "@bmbrick/photo-to-lego-mosaic-skill",
   "mcpName": "io.github.Able-rip/photo-to-lego-mosaic-skill",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Convert any local photo into a LEGO-style brick mosaic preview. MCP server + Node API powered by the BMBrick color quantization engine. Renamed from @bmbrick/agent-mosaic-skill.",
   "repository": {
     "type": "git",
@@ -21,11 +21,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "sync:core": "node scripts/sync-core.js",
-    "build": "node scripts/build.js",
-    "test": "npm run build && node --test test/*.test.mjs",
-    "smoke": "node test/smoke.mjs",
-    "prepack": "npm test"
+    "smoke": "node test/smoke.mjs"
   },
   "publishConfig": {
     "access": "public"
