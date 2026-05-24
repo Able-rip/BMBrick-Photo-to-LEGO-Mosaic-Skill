@@ -1,20 +1,20 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Able-rip/agent-mosaic-skill",
+  "name": "io.github.Able-rip/photo-to-lego-mosaic-skill",
   "description": "Convert photos to LEGO-style brick mosaic previews with AI-powered color quantization.",
   "repository": {
     "url": "https://github.com/Able-rip/agent-mosaic-skill",
     "source": "github"
   },
-  "version": "1.3.0",
+  "version": "2.0.2",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@bmbrick/agent-mosaic-skill",
-      "version": "1.3.0",
+      "identifier": "@bmbrick/photo-to-lego-mosaic-skill",
+      "version": "2.0.2",
       "transport": {
         "type": "stdio"
       }
     }
   ]
-}
+}
