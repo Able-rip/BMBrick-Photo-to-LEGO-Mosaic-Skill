@@ -1,6 +1,6 @@
 # BMBrick Engineering Documentation
 
-Public technical documentation for the [BMBrick](https://www.bmbrick.com) color quantization pipeline and the [`@bmbrick/agent-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/agent-mosaic-skill) MCP server that exposes it to AI agents.
+Public technical documentation for the [BMBrick](https://www.bmbrick.com) color quantization pipeline and the [`@bmbrick/photo-to-lego-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/photo-to-lego-mosaic-skill) MCP server that exposes it to AI agents.
 
 ---
 
@@ -18,7 +18,7 @@ The flagship engineering document. Covers the current pipeline architecture, the
 ## Quick links
 
 - Live tool: [bmbrick.com](https://www.bmbrick.com) (free, browser-based, no upload)
-- npm package: [`@bmbrick/agent-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/agent-mosaic-skill)
+- npm package: [`@bmbrick/photo-to-lego-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/photo-to-lego-mosaic-skill)
 - Skill README: [../README.md](../README.md)
 - MCP setup: [../SKILL.md](../SKILL.md)
 

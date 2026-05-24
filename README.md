@@ -1,15 +1,17 @@
-# BMBrick Agent Mosaic Skill
+# BMBrick Photo-to-LEGO-Mosaic Skill
 
-[![npm version](https://img.shields.io/npm/v/@bmbrick/agent-mosaic-skill)](https://www.npmjs.com/package/@bmbrick/agent-mosaic-skill)
+[![npm version](https://img.shields.io/npm/v/@bmbrick/photo-to-lego-mosaic-skill)](https://www.npmjs.com/package/@bmbrick/photo-to-lego-mosaic-skill)
 [![License](https://img.shields.io/badge/license-MIT%20%2B%20Restricted-blue)](#license)
 
 Convert any local photo into a LEGO-style brick mosaic preview — directly from your AI agent.
 
-`@bmbrick/agent-mosaic-skill` is an MCP server that lets Claude, Cursor, Windsurf, and other AI agents transform local images into high-fidelity 3D brick mosaics using the same canonical engine as [bmbrick.com](https://bmbrick.com).
+`@bmbrick/photo-to-lego-mosaic-skill` is an MCP server that lets Claude, Cursor, Windsurf, and other AI agents transform local images into high-fidelity 3D brick mosaics using the same canonical engine as [bmbrick.com](https://bmbrick.com).
+
+> **Renamed from `@bmbrick/agent-mosaic-skill`** (the old name still works but is deprecated — please migrate to the new name for future updates).
 
 ## Visual Previews
 
-Generated with the `generate_bmbrick_mosaic` tool (3D render mode):
+Generated with the `generate_lego_mosaic` tool (3D render mode):
 
 **Square Tiles (`square_1x1`)**
 
@@ -26,7 +28,7 @@ Generated with the `generate_bmbrick_mosaic` tool (3D render mode):
 ## Quick Start
 
 ```bash
-npx -y @bmbrick/agent-mosaic-skill
+npx -y @bmbrick/photo-to-lego-mosaic-skill
 ```
 
 ### MCP Client Configuration
@@ -36,9 +38,9 @@ npx -y @bmbrick/agent-mosaic-skill
 ```json
 {
   "mcpServers": {
-    "bmbrick-mosaic": {
+    "lego-mosaic": {
       "command": "npx",
-      "args": ["-y", "@bmbrick/agent-mosaic-skill"]
+      "args": ["-y", "@bmbrick/photo-to-lego-mosaic-skill"]
     }
   }
 }
@@ -49,15 +51,15 @@ npx -y @bmbrick/agent-mosaic-skill
 ```json
 {
   "mcpServers": {
-    "bmbrick-mosaic": {
+    "lego-mosaic": {
       "command": "npx",
-      "args": ["-y", "@bmbrick/agent-mosaic-skill"]
+      "args": ["-y", "@bmbrick/photo-to-lego-mosaic-skill"]
     }
   }
 }
 ```
 
-## Tool: `generate_bmbrick_mosaic`
+## Tool: `generate_lego_mosaic`
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -88,6 +90,16 @@ Deep technical reference for the color quantization pipeline that powers this sk
 - **Color quantization pipeline: principles, history, and lessons** — current architecture, architectural decisions, verified principles, failed experiments from 25+ versions of iteration, and parameter sensitivity reference.
   - 🇬🇧 [English](./docs/color-pipeline.md)
   - 🇨🇳 [中文](./docs/color-pipeline.zh-CN.md)
+
+## Migrating from `@bmbrick/agent-mosaic-skill`
+
+If you were using the old name, the migration is one search/replace:
+
+1. **Package name:** `@bmbrick/agent-mosaic-skill` → `@bmbrick/photo-to-lego-mosaic-skill`
+2. **MCP tool name** (in your agent's tool list): `generate_bmbrick_mosaic` → `generate_lego_mosaic`
+3. **Binary name** (rare): `agent-mosaic-skill` → `photo-to-lego-mosaic-skill`
+
+The tool parameters (imagePath, columns, rows, etc.) and return shape are unchanged.
 
 ## Development
 

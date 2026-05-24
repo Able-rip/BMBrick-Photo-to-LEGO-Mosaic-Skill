@@ -1,11 +1,11 @@
 {
-  "name": "@bmbrick/agent-mosaic-skill",
-  "mcpName": "io.github.Able-rip/agent-mosaic-skill",
-  "version": "1.3.1",
-  "description": "The official BMBrick AI engine for converting local images into high-fidelity LEGO-style mosaic previews.",
+  "name": "@bmbrick/photo-to-lego-mosaic-skill",
+  "mcpName": "io.github.Able-rip/photo-to-lego-mosaic-skill",
+  "version": "2.0.0",
+  "description": "Convert any local photo into a LEGO-style brick mosaic preview. MCP server + Node API powered by the BMBrick color quantization engine. Renamed from @bmbrick/agent-mosaic-skill.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Able-rip/agent-mosaic-skill.git"
+    "url": "git+https://github.com/Able-rip/agent-mosaic-skill.git"
   },
   "main": "./dist/index.js",
   "exports": {
@@ -13,7 +13,7 @@
     "./mcp": "./dist/mcp-server.js"
   },
   "bin": {
-    "agent-mosaic-skill": "./dist/mcp-server.js"
+    "photo-to-lego-mosaic-skill": "dist/mcp-server.js"
   },
   "files": [
     "dist",
@@ -28,15 +28,19 @@
     "prepack": "npm test"
   },
   "keywords": [
-    "bmbrick",
-    "mosaic",
     "lego",
+    "mosaic",
+    "photo-to-lego",
+    "lego-mosaic",
     "mcp",
+    "mcp-server",
     "model-context-protocol",
     "agent-skill",
+    "bmbrick",
     "pixel-art",
     "image-processing",
-    "bricks"
+    "bricks",
+    "lego-art"
   ],
   "author": "BMBrick",
   "license": "SEE LICENSE IN LICENSE",

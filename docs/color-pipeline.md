@@ -428,7 +428,7 @@ A revisit of the Bayer dithering experiment (5.3), but only applied to verified-
 ## Where to go from here
 
 - See [BMBrick](https://www.bmbrick.com) for the live tool that uses this pipeline (free, browser-based, no upload).
-- The MCP agent skill that exposes this engine to AI agents: [`@bmbrick/agent-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/agent-mosaic-skill).
+- The MCP agent skill that exposes this engine to AI agents: [`@bmbrick/photo-to-lego-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/photo-to-lego-mosaic-skill).
 - 中文版本: [color-pipeline.zh-CN.md](./color-pipeline.zh-CN.md).
 
 ---

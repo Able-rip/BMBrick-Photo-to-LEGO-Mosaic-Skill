@@ -428,7 +428,7 @@ V5 试图用调参修复。V5 引入高光过曝。V5.1 重调引入白砖色偏
 ## 接下来去哪
 
 - 看 [BMBrick](https://www.bmbrick.com) 这个用了本管线的在线工具（免费、浏览器内、不上传）。
-- 把这个引擎暴露给 AI agent 的 MCP skill：[`@bmbrick/agent-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/agent-mosaic-skill)。
+- 把这个引擎暴露给 AI agent 的 MCP skill：[`@bmbrick/photo-to-lego-mosaic-skill`](https://www.npmjs.com/package/@bmbrick/photo-to-lego-mosaic-skill)。
 - 英文版本：[color-pipeline.md](./color-pipeline.md)。
 
 ---
