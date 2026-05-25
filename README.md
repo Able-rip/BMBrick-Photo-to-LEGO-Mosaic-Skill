@@ -25,6 +25,8 @@ Generated with the `generate_lego_mosaic` tool (3D render mode):
 | :--- | :--- | :--- |
 | ![Original](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_original_photo.png) | ![48x48 Round](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_round_48x48.png) | ![64x64 Round](https://raw.githubusercontent.com/Able-rip/agent-mosaic-skill/main/assets/cat_mosaic_round_64x64.png) |
 
+For more case studies and mosaic examples, check out our [Pinterest Showcase](https://www.pinterest.com/BMBrickTeam/diy-lego-mosaic-art-pixel-art-ideas/).
+
 ## Quick Start
 
 ```bash
